@@ -7,8 +7,9 @@ Original file is located at
     https://colab.research.google.com/drive/1WNcIJ65VJ0U2M4zN_qGmVtEWpc4_a5GF
 """
 
+import numpy as np
 import pandas as pd
-from ydata_profiling import ProfileReport
+#from ydata_profiling import ProfileReport
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -19,9 +20,11 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from scipy import stats
 #from lazypredict.Supervised import LazyRegressor
 
 data = pd.read_csv("train.csv")
+#column
 # tracking_id
 # datetime
 # wind_speed(m/s)
@@ -45,15 +48,42 @@ data = pd.read_csv("train.csv")
 # windmill_height(m)
 # windmill_generated_power(kW/h)
 
-#stat = data.describe()
-data = data.drop("tracking_id",axis=1)
-data = data.drop("datetime",axis=1)
-data = data.dropna()
+
+#data = data.fillna()
 # report = ProfileReport(data, title = "report", explorative=True)
 # report.to_file("report.html")
+data = data.drop("tracking_id",axis=1)
+data = data.drop("datetime",axis=1)
+data = data.drop("blade_length(m)",axis=1)
 
+target = "windmill_generated_power(kW/h)"
+x = data.drop(target,axis=1)
+y = data[target]
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=2024)
 
-# target = "windmill_generated_power(kW/h)"
-# x = data.drop(target,axis=1)
-# y = data[target]
-# x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=2024)
+#turn 2 categorical into numbers
+data['cloud_level'].replace(['Extremely Low', 'Low', 'Medium'],
+                        [-1,0, 1], inplace=True)
+
+data['turbine_status'].replace(['A', 'A2', 'AAA', 'AB', 'ABC', 'AC', 'B', 'B2', 'BA', 'BB', 'BBB', 'BCB', 'BD', 'D'],
+                        [1,2,3,4,5,6,7,8,9,10,11,12,13,14], inplace=True)
+print(data)
+print(type(data))
+
+for col in data.columns:
+  if col != "turbine_status" and col != "cloud_level":
+    data[col].fillna(int(data[col].mean()), inplace=True)
+
+data['cloud_level'] = data['cloud_level'].fillna(0)
+print(data['cloud_level'])
+
+data['turbine_status'] = data['turbine_status'].fillna(value=7)
+print(data['turbine_status'])
+
+#working on outliers
+#data[(np.abs(stats.zscore(data)) < 3).all(axis=1)]
+
+print(data)
+
+# report = ProfileReport(data, title = "report", explorative=True)
+# report.to_file("remove_outliers_report.html")
